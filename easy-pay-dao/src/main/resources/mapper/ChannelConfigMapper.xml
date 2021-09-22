@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021 LiGuo <bingyang136@163.com>
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.ChannelConfigDao">
+    <resultMap id="BaseMap"
+               type="com.panli.pay.support.model.po.ChannelConfigPo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="channel_name" property="channelName" jdbcType="VARCHAR"/>
+        <result column="channel_code" property="channelCode" jdbcType="VARCHAR"/>
+        <result column="merchant_id" property="merchantId" jdbcType="VARCHAR"/>
+        <result column="app_id" property="appId" jdbcType="VARCHAR"/>
+        <result column="created_datetime" property="createdDateTime" jdbcType="TIMESTAMP"/>
+        <result column="created_user_id" property="createdUserId" jdbcType="INTEGER"/>
+        <result column="is_deleted" property="isDeleted" jdbcType="BIT"/>
+        <result column="public_key" property="publicKey" jdbcType="VARCHAR"/>
+        <result column="private_key" property="privateKey" jdbcType="VARCHAR"/>
+        <result column="service_url" property="serviceUrl" jdbcType="VARCHAR"/>
+        <result column="extend_parameter" property="extendParameter" jdbcType="VARCHAR"/>
+        <result column="red_timeout_ms" property="redTimeoutMs" jdbcType="INTEGER"/>
+        <result column="conn_timeout_ms" property="connectTimeoutMs" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.panli.pay.support.model.po.ChannelConfigPo"
+            keyColumn="id"
+            keyProperty="id"
+            useGeneratedKeys="true">
+       INSERT INTO channel_config
+        (channel_name,
+        channel_code,
+        merchant_id,
+        app_id,
+        public_key,
+        private_key,
+        service_url,
+        extend_parameter,
+        created_user_id,
+
+        red_timeout_ms,
+        conn_timeout_ms)
+        values
+        (
+        #{po.channelName},
+        #{po.channelCode},
+        #{po.merchantId},
+        #{po.appId},
+        #{po.publicKey},
+        #{po.privateKey},
+        #{po.serviceUrl},
+        #{po.extendParameter},
+        #{po.createdUserId},
+        #{po.redTimeoutMs},
+        #{po.connTimeoutMs}
+        )
+    </insert>
+
+    <select id="queryByCode" resultMap="BaseMap">
+        SELECT id, channel_name, channel_code, merchant_id,app_id, public_key,
+        private_key, service_url, extend_parameter, created_user_id, created_datetime, is_deleted,
+        red_timeout_ms,conn_timeout_ms
+        FROM channel_config
+        where channel_code=#{channelCode} and is_deleted=0
+    </select>
+</mapper>

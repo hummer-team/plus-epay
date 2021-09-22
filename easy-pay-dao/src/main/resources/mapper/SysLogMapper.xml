@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021 LiGuo <bingyang136@163.com>
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.SysLogDao">
+    <resultMap id="BaseMap"
+               type="com.panli.pay.support.model.po.SysLogPo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="sys_code" property="sysCode" jdbcType="INTEGER"/>
+        <result column="sys_message" property="sysMessage" jdbcType="VARCHAR"/>
+        <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
+        <result column="created_date_time" property="createdDateTime" jdbcType="TIMESTAMP"/>
+        <result column="platform_code" property="platformCode" jdbcType="VARCHAR"/>
+        <result column="business_code" property="businessCode" jdbcType="VARCHAR"/>
+        <result column="channel_code" property="channelCode" jdbcType="VARCHAR"/>
+        <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
+        <result column="request_body" property="requestBody" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.panli.pay.support.model.po.SysLogPo"
+            keyColumn="id"
+            keyProperty="id"
+            useGeneratedKeys="true">
+      INSERT INTO sys_log
+        (platform_code, business_code, channel_code, sys_code, sys_message, request_id, request_body)
+        VALUES(
+        #{po.platformCode},
+        #{po.businessCode},
+        #{po.channelCode},
+        #{po.sysCode},
+        #{po.sysMessage},
+        #{po.requestId},
+        #{po.requestBody});
+
+    </insert>
+</mapper>

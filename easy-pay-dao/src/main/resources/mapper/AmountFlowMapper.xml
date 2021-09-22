@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021 LiGuo <bingyang136@163.com>
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.AmountFlowDao">
+    <resultMap id="BaseMap"
+               type="com.panli.pay.support.model.po.AmountFlowPo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+
+        <result column="trade_id" property="tradeId" jdbcType="VARCHAR"/>
+        <result column="channel_trade_id" property="channelTradeId" jdbcType="VARCHAR"/>
+        <result column="created_date_time" property="createdDatetime" jdbcType="TIMESTAMP"/>
+
+        <result column="amount" property="amount" jdbcType="DECIMAL"/>
+        <result column="batch_id" property="batchId" jdbcType="VARCHAR"/>
+        <result column="flow_type" property="flowType" jdbcType="BIT"/>
+        <result column="merchant_id" property="merchantId" jdbcType="VARCHAR"/>
+        <result column="rate" property="rate" jdbcType="DOUBLE"/>
+        <result column="amountUnitType" property="amountUnitType" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.panli.pay.support.model.po.PaymentOrderPo"
+            keyColumn="id"
+            keyProperty="id"
+            useGeneratedKeys="true">
+      INSERT INTO amount_flow (merchant_id, trade_id,channel_trade_id, batch_id,amount, flow_type)
+        VALUES(#{po.merchantId}, #{po.tradeId},
+         #{po.channelTradeId},
+         #{po.batchId},
+         #{po.amount},
+         #{po.flowType})
+    </insert>
+
+    <select id="queryOrderFlow" resultMap="BaseMap">
+        SELECT id, merchant_id, trade_id, channel_trade_id, batch_id, amount, flow_type, amount_unit_type, rate, created_date_time
+        FROM amount_flow where trade_id=#{tradeId} and channel_trade_id=#{channelTradeId}
+
+    </select>
+</mapper>

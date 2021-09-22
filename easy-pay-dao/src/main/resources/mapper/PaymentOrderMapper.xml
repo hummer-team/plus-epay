@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021 LiGuo <bingyang136@163.com>
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.PaymentOrderDao">
+    <resultMap id="BaseMap"
+               type="com.panli.pay.support.model.po.PaymentOrderPo">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="platform_code" property="platformCode" jdbcType="VARCHAR"/>
+        <result column="channel_code" property="channelCode" jdbcType="VARCHAR"/>
+        <result column="order_tag" property="orderTag" jdbcType="VARCHAR"/>
+        <result column="platform_sub_type" property="platformSubType" jdbcType="VARCHAR"/>
+        <result column="trade_id" property="tradeId" jdbcType="VARCHAR"/>
+        <result column="channel_trade_id" property="channelTradeId" jdbcType="VARCHAR"/>
+        <result column="created_date_time" property="createdDatetime" jdbcType="TIMESTAMP"/>
+        <result column="payment_user_id" property="paymentUserId" jdbcType="VARCHAR"/>
+        <result column="is_deleted" property="isDeleted" jdbcType="BIT"/>
+        <result column="pay_type" property="payChannelType" jdbcType="INTEGER"/>
+        <result column="amount" property="amount" jdbcType="DECIMAL"/>
+        <result column="request_id" property="requestId" jdbcType="VARCHAR"/>
+        <result column="status_code" property="statusCode" jdbcType="INTEGER"/>
+        <result column="refund_batch_id" property="refundBatchId" jdbcType="VARCHAR"/>
+        <result column="channel_advance_payment_id" property="channelAdvancePaymentId" jdbcType="VARCHAR"/>
+        <result column="payment_date_time" property="paymentDateTime" jdbcType="TIMESTAMP"/>
+        <result column="payment_timeout" property="paymentTimeout" jdbcType="TIMESTAMP"/>
+        <result column="channel_refund_id" property="channelRefundId" jdbcType="VARCHAR"/>
+        <result column="channel_trade_status" property="channelTradeStatus" jdbcType="VARCHAR"/>
+        <result column="channel_refund_status" property="channelRefundStatus" jdbcType="VARCHAR"/>
+        <result column="merchant_id"  property="merchantId" jdbcType="VARCHAR"/>
+        <result column="order_type" property="orderType" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <insert id="insertPayOrder" parameterType="com.panli.pay.support.model.po.PaymentOrderPo"
+            keyColumn="id"
+            keyProperty="id"
+            useGeneratedKeys="true">
+        INSERT INTO payment_order
+        (
+         platform_code,
+         channel_code,
+         order_tag,
+         platform_sub_type,
+         trade_id,
+         channel_trade_id,
+         pay_type,
+         amount,
+         payment_user_id,
+         request_id,
+         status_code,
+         refund_batch_id,
+         channel_advance_payment_id,
+         payment_date_time,
+         payment_timeout,
+         merchant_id,
+         order_type)
+        values
+        (
+        #{po.platformCode},
+        #{po.channelCode},
+        #{po.orderTag},
+        #{po.platformSubType},
+        #{po.tradeId},
+        #{po.channelTradeId},
+        #{po.payChannelType},
+        #{po.amount},
+        #{po.paymentUserId},
+        #{po.requestId},
+        #{po.statusCode},
+        #{po.refundBatchId},
+        #{po.channelAdvancePaymentId},
+        #{po.paymentDateTime},
+        #{po.paymentTimeout},
+        #{po.merchantId},
+        #{po.orderType}
+        )
+    </insert>
+
+    <insert id="insertRefundOrder" parameterType="com.panli.pay.support.model.po.PaymentOrderPo"
+            keyColumn="id"
+            keyProperty="id"
+            useGeneratedKeys="true">
+       INSERT INTO payment_order
+        (platform_code,
+        order_tag,
+        channel_code,
+        platform_sub_type,
+        status_code,
+        trade_id,
+        channel_trade_id,
+        channel_advance_payment_id,
+        channel_refund_id,
+        refund_batch_id,
+        payment_timeout,
+        pay_type,
+        amount,
+        payment_user_id,
+        payment_date_time,
+        created_date_time,
+        request_id,
+        channel_trade_status,
+        channel_refund_status,
+        merchant_id,
+        order_type)
+        VALUES(
+        #{po.platformCode},
+        #{po.orderTag},
+        #{po.channelCode},
+        #{po.businessType},
+        #{po.statusCode},
+        #{po.tradeId},
+        #{po.channelTradeId},
+        #{po.channelAdvancePaymentId},
+        #{po.channelRefundId},
+        #{po.refundBatchId},
+        #{po.paymentTimeout},
+        #{po.payType},
+        #{po.amount},
+        #{po.paymentUserId},
+        #{po.paymentDateTime},
+        CURRENT_TIMESTAMP,
+        #{po.requestId},
+        #{po.channelTradeStatus},
+        #{po.channelRefundStatus},
+        #{po.merchantId},
+        #{po.orderType});
+
+
+    </insert>
+
+    <select id="queryByTradeId" resultMap="BaseMap" resultType="java.util.List">
+        SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId} and is_deleted=0
+    </select>
+
+    <select id="queryOutChannelOrder" resultMap="BaseMap">
+        SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where channel_trade_id=#{channelTradeId} and is_deleted=0 and channel_code!='yugBeanPayment'
+    </select>
+
+    <select id="queryByTradeIdAndExcludeYugBean" resultMap="BaseMap">
+        SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId} and is_deleted=0 and channel_code!='yugBean' and payment_user_id=#{userId}
+    </select>
+
+    <select id="queryByTradeIdAndCode" resultMap="BaseMap"  resultType="java.util.List">
+        SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId}
+        and platform_code=#{platformCode}
+        and is_deleted=0
+    </select>
+
+    <select id="queryOneByTradeIdAndCode" resultMap="BaseMap">
+         SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId}
+        and channel_code=#{channelCode}
+        and is_deleted=0 limit 1
+    </select>
+
+    <select id="queryOneByTradeIdAndCodeAndUserId" resultMap="BaseMap">
+         SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId}
+        and channel_code=#{channelCode} and payment_user_id=#{userId}
+        and is_deleted=0 limit 1
+    </select>
+
+    <select id="queryByTradeIdChannelCodeUserId" resultMap="BaseMap" resultType="java.util.List">
+         SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id, request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId}
+        and channel_code=#{channelCode} and payment_user_id=#{userId}
+        and is_deleted=0
+        and order_type = 0
+    </select>
+
+    <select id="queryExistsRefundOrder" resultType="java.lang.Boolean">
+        select exists(SELECT 1 from payment_order where trade_id=#{tradeId}
+        and channel_code=#{channelCode}
+        and payment_user_id=#{userId}
+        and refund_batch_id=#{batchId}
+        )
+    </select>
+
+    <select id="queryByTradeIdByCode" resultMap="BaseMap">
+         SELECT id, platform_code, channel_code, order_tag, platform_sub_type, status_code,
+          trade_id, channel_trade_id, pay_type, amount,
+          payment_user_id,  request_id, created_date_time, is_deleted,
+          channel_advance_payment_id,payment_date_time,payment_timeout,channel_refund_id,
+          channel_trade_status,channel_refund_status,merchant_id
+        FROM payment_order
+        where trade_id=#{tradeId}
+        and platform_code=#{platformCode}
+        and channel_code=#{channelCode}
+        and is_deleted=0
+    </select>
+
+    <update id="updatePaymentStatus">
+        update amount_flow set payment_date_time = now(),status_code=#{status},
+        channel_trade_id=#{channelTradeId},channel_trade_status=#{channelTradeStatus}
+        where trade_id=#{tradeId} and request_id=#{requestId}
+    </update>
+
+    <update id="updateRefundStatus">
+         update payment_order set
+         status_code=#{status},
+         channel_refund_id=#{channelRefundId},
+         channel_refund_status=#{channelRefundStatus}
+         where trade_id=#{tradeId} and channel_trade_id=#{channelTradeId}
+    </update>
+</mapper>

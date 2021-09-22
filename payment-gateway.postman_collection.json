@@ -1,0 +1,310 @@
+{
+	"info": {
+		"_postman_id": "dc0bb4ba-b6cd-4458-9b2c-21825e069734",
+		"name": "payment-gateway",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "支付宝条码支付",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"businessCode\": \"MD\",\n  \"businessType\": 0,\n  \"paymentRemark\": \"测试门店\",\n  \"platformCode\": \"YUG\",\n  \"tradeId\": \"MD12320202030\",\n  \"userId\": \"UX1234\",\n   \"pays\":{\n            \"channelCode\": \"aliBarCode\",\n            \"amount\": 200.00,\n            \"parameter\":{\n                  \"barcode\": \"xx\"\n            }\n      }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9105/v1/barcode/payment",
+					"host": [
+						"localhost"
+					],
+					"port": "9105",
+					"path": [
+						"v1",
+						"barcode",
+						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "微信条码支付",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"businessType\": 0,\n  \"pays\":\n      {\n            \"channelCode\": \"wxBarCode\",\n            \"amount\": 200.00,\n             \"parameter\":{\n                  \"barcode\": \"xx\"\n            }\n      }\n  ,\n  \"paymentRemark\": \"测试门店\",\n  \"platformCode\": \"YUG\",\n  \"tradeId\": \"MD202103231522208705\",\n  \"userId\": \"UX1234\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:20000/v1/barcode/payment",
+					"host": [
+						"localhost"
+					],
+					"port": "20000",
+					"path": [
+						"v1",
+						"barcode",
+						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "支付宝交易查询",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:20000/v1/payment/status/query?tradeId=MD20210417114911111",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "20000",
+					"path": [
+						"v1",
+						"payment",
+						"status",
+						"query"
+					],
+					"query": [
+						{
+							"key": "tradeId",
+							"value": "MD20210417114911111"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "微信交易查询",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:20000/v1/payment/status/query?tradeId=MD202103231522208701&local=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "20000",
+					"path": [
+						"v1",
+						"payment",
+						"status",
+						"query"
+					],
+					"query": [
+						{
+							"key": "tradeId",
+							"value": "MD202103231522208701"
+						},
+						{
+							"key": "local",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "微信统一下单预支付",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"amount\": 0.01,\n  \"businessCode\": \"MD\",\n  \"businessType\": 0,\n  \"paymentRemark\": \"测试门店\",\n  \"platformCode\": \"YUG\",\n  \"tradeId\": \"MD202103231522208709\",\n  \"userId\": \"UX1234\",\n  \"openId\":\"o-x3X5dWfMxYnxVNPx0AgufZysmQ\",\n    \"pays\":[\n      {\n            \"channelCode\": \"wxJsapiPayment\",\n            \"amount\": 200.00\n      }\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:20000/v1/advance/payment",
+					"host": [
+						"localhost"
+					],
+					"port": "20000",
+					"path": [
+						"v1",
+						"advance",
+						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "微信统一下单预支付查询",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:20000/v1/payment/status/query?tradeId=MD202103231522208706&local=1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "20000",
+					"path": [
+						"v1",
+						"payment",
+						"status",
+						"query"
+					],
+					"query": [
+						{
+							"key": "tradeId",
+							"value": "MD202103231522208706"
+						},
+						{
+							"key": "local",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "愚公币支付",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"platformCode\": \"YUG\",\n  \"businessCode\": \"Wx\",\n  \"pays\":[\n      {\n            \"channelCode\": \"yugBean\",\n            \"amount\": 1.00\n      }\n  ],\n  \"paymentRemark\": \"测试下单\",\n  \"businessType\": 0,\n  \"userId\": \"UX1234\",\n  \"tradeId\": \"MD202103231522208718\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9105/v1/barcode/payment",
+					"host": [
+						"localhost"
+					],
+					"port": "9105",
+					"path": [
+						"v1",
+						"barcode",
+						"payment"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "愚公币支付查询",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:9105/v1/payment/status/query?tradeId=MD202103231522208718&local=1&channelCode=yugBean",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9105",
+					"path": [
+						"v1",
+						"payment",
+						"status",
+						"query"
+					],
+					"query": [
+						{
+							"key": "tradeId",
+							"value": "MD202103231522208718"
+						},
+						{
+							"key": "local",
+							"value": "1"
+						},
+						{
+							"key": "channelCode",
+							"value": "yugBean"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "愚公币退款",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"tradeId\":\"MD202103231522208718\",\n    \"refundBatchId\":\"202104151114\",\n    \"amount\":\"1\",\n    \"channelCode\":\"yugBean\",\n    \"userId\":\"UX1234\",\n    \"platformCode\":\"YUG\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:9105/v1/refund",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "9105",
+					"path": [
+						"v1",
+						"refund"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "支付宝app下单",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"businessCode\": \"MD\",\n  \"businessType\": 0,\n  \"paymentRemark\": \"测试门店-MD20210417114911113\",\n  \"platformCode\": \"YUG\",\n  \"tradeId\": \"MD20210417114911113\",\n  \"userId\": \"UX1234\",\n    \"pays\":\n      {\n            \"channelCode\": \"aliApp\",\n            \"amount\": 200.00\n      }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9105/v1/pay",
+					"host": [
+						"localhost"
+					],
+					"port": "9105",
+					"path": [
+						"v1",
+						"pay"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -42,7 +42,6 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 //@ImportResource(locations = "classpath:dubbo.xml")
 @UndertowServer
 public class ApplicationStart {
-
     public static void main(String[] args) {
         HummerApplicationStart.start(ApplicationStart.class, args);
     }

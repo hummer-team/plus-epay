@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.enums;
 
 public class ConstantDefine {
@@ -49,10 +27,17 @@ public class ConstantDefine {
     public static final String WX_BARCODE_PAYMENT_CHANNEL_SERVICE_MCH = "wxServiceMchBarCode.Channel.Pay";
     public static final String WX_BARCODE_PAYMENT_CHANNEL_SERVICE_MCH_CHANNEL = "wxServiceMchBarCode.Channel.Channel";
     public static final String WX_BARCODE_PAYMENT_QUERY_SERVICE_MCH = "wxServiceMchBarCode.Channel.Query";
+    public static final String WX_BARCODE_PAYMENT_CANCEL_SERVICE_MCH = "wxServiceMchBarCode.Channel.Cancel";
+    public static final String WX_BARCODE_PAYMENT_REFUND_SERVICE_MCH = "wxServiceMchBarCode.Channel.Refund";
+    public static final String WX_SERVICE_PAYMENT_REFUND = "wxServiceMch.Channel.Refund";
 
-    public static final String WX_FZ_REQUEST = "wxServiceMchFz.Channel.Request";
-    public static final String WX_FZ_QUERY = "wxServiceMchFz.Channel.Query";
-    public static final String WX_FZ_REFUND = "wxServiceMchFz.Channel.Refund";
+    public static final String WX_FZ_REQUEST = "wxServiceMchFz.Request";
+    public static final String WX_FZ_QUERY = "wxServiceMchFz.Query";
+    public static final String WX_FZ_REFUND = "wxServiceMchFz.Refund";
+    public static final String WX_FZ_ADD_RECEIVER = "wxServiceMchFz.Add_receiver";
+    public static final String WX_FZ_RATE_QUERY = "wxServiceMchFz.PROFIT_SHARING_RATE_QUERY";
+    public static final String WX_FZ_UNFREEZE = "wxServiceMchFz.PROFIT_SHARING_UNFREEZE";
+    public static final String WX_FZ_RETURN = "wxServiceMchFz.PROFIT_SHARING_RETURN";
 
     public static final String WX_ADVANCE_PAYMENT_CHANNEL = "wxJsapi.Channel.Pay";
     public static final String WX_ADVANCE_PAYMENT_APP_CHANNEL = "wxJsapiApp.Channel.Pay";
@@ -72,7 +57,10 @@ public class ConstantDefine {
     public static final String DEFAULT_QUERY_TEMPLATE = "DefaultPaymentQuery";
 
     public static final String DEFAULT_PROFIT_SHARING_REQUEST_TEMPLATE = "DefaultProfitSharingTemplate";
-
+    public static final String DEFAULT_PROFIT_SHARING_ADD_RECEIVER_TEMPLATE = "DefaultProfitSharingAddReceiverTemplate";
+    public static final String DEFAULT_PROFIT_SHARING_RATE_QUERY_TEMPLATE = "DEFAULT.PROFIT_SHARING_RATE_QUERY.TEMPLATE";
+    public static final String DEFAULT_PROFIT_SHARING_UNFREEZE_TEMPLATE = "DEFAULT.PROFIT_SHARING_UNFREEZE.TEMPLATE";
+    public static final String DEFAULT_PROFIT_SHARING_RETURN_TEMPLATE = "DEFAULT.PROFIT_SHARING_RETURN.TEMPLATE";
     /**
      * is sharing ?
      */

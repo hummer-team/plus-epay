@@ -1,36 +1,15 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.core;
 
 import com.alibaba.fastjson.JSON;
 import com.hummer.common.exceptions.AppException;
+import com.hummer.common.utils.AppBusinessAssert;
 import com.hummer.common.utils.BigDecimalUtil;
 import com.hummer.core.SpringApplicationContext;
 import com.panli.pay.dao.PaymentOrderDao;
 import com.panli.pay.service.domain.context.BasePaymentChannelReqBodyContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
+import com.panli.pay.service.domain.result.BaseResultContext;
 import com.panli.pay.service.domain.context.RefundContext;
-import com.panli.pay.service.domain.context.RefundResultContext;
+import com.panli.pay.service.domain.result.RefundResultContext;
 import com.panli.pay.service.domain.enums.ChannelActionEnum;
 import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.event.SysLogEvent;
@@ -43,8 +22,8 @@ public abstract class AbstractRefundTemplate extends AbstractTemplate {
     @Autowired
     private PaymentOrderDao paymentOrderDao;
 
-    @SuppressWarnings({"unchecked","rawtypes"})
-    public void doRefund(RefundContext context, PaymentChannel channel) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public BaseResultContext<RefundResultContext> doRefund(RefundContext context, PaymentChannel channel) {
         checkRisk(context);
         setContextAndSelfCheck(context);
         BaseResultContext<RefundResultContext> resultContext;
@@ -52,6 +31,8 @@ public abstract class AbstractRefundTemplate extends AbstractTemplate {
             BasePaymentChannelReqBodyContext reqBodyContext = channel.builder(context);
             resultContext = channel.parseResp(channel.doCall(context, reqBodyContext));
             saveRefundResult(resultContext, context, reqBodyContext);
+            AppBusinessAssert.isTrue(resultContext.isSuccess(), 500,
+                    resultContext.getChannelRespMessage() + resultContext.getChannelSubMessage());
         } catch (Throwable e) {
             log.error("refund fail,{} - {} - {} -"
                     , context.getTradeId(), context.getChannelTradeId(), context.getRefundBatchId(), e);
@@ -61,8 +42,9 @@ public abstract class AbstractRefundTemplate extends AbstractTemplate {
                             , context.getPlatformCode(), context.getPlatformSubType(), context.getChannelCode()
                             , JSON.toJSONString(context), "refund fail", e));
 
-            throw new AppException(50000, "refund failed "+ e.getMessage(), e);
+            throw new AppException(50000, "refund failed " + e.getMessage(), e);
         }
+        return resultContext;
     }
 
     /**
@@ -102,15 +84,6 @@ public abstract class AbstractRefundTemplate extends AbstractTemplate {
             throw new AppException(40005, "this order status can not support refund");
         }
 
-        boolean exists = paymentOrderDao.queryExistsRefundOrder(context.getTradeId()
-                , context.getChannelCode()
-                , context.getUserId()
-                , context.getRefundBatchId());
-        if (exists) {
-            throw new AppException(40005, String.format("this order already refund,tradId:%s - refundBatchId:%s"
-                    , context.getTradeId(), context.getRefundBatchId()));
-        }
-
         if (BigDecimalUtil.greaterThan(context.getAmount(), flowPo.getAmount())) {
             throw new AppException(40006, "refund amount can not greater than order amount");
         }
@@ -126,12 +99,13 @@ public abstract class AbstractRefundTemplate extends AbstractTemplate {
     protected void setContextAndSelfCheck(RefundContext context) {
         PaymentOrderPo flowPo = checkIsAllowRefund(context);
         context.setChannelConfigPo(checkChannelIsValid(flowPo.getPlatformCode(), flowPo.getChannelCode()
-        , ChannelActionEnum.REFUND));
+                , ChannelActionEnum.REFUND));
         //set context
         context.setPlatformCode(flowPo.getPlatformCode());
         context.setOrderTag(flowPo.getOrderTag());
         context.setPlatformSubType(flowPo.getPlatformSubType());
         context.setPaymentOrder(flowPo);
         context.setChannelTradeId(flowPo.getChannelTradeId());
+        context.setOriginOrderAmount(flowPo.getAmount());
     }
 }

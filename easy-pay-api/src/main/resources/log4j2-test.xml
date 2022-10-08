@@ -1,33 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ Copyright (c) 2021 LiGuo <bingyang136@163.com>
-  ~
-  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
-  ~ of this software and associated documentation files (the "Software"), to deal
-  ~ in the Software without restriction, including without limitation the rights
-  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  ~ copies of the Software, and to permit persons to whom the Software is
-  ~ furnished to do so, subject to the following conditions:
-  ~
-  ~ The above copyright notice and this permission notice shall be included in all
-  ~ copies or substantial portions of the Software.
-  ~
-  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  ~ SOFTWARE.
-  -->
-
 <!-- status=debug 可以查看log4j的装配过程 -->
 <configuration status="OFF" monitorInterval="1800" packages="org.apache.logging.log4j.core">
 	<properties>
 		<property name="LOG_PATH">/var</property>
 		<property name="project_name">epay.service.yugyg.com</property>
 		<!--<property name="pattern">[%level] [%date{ISO8601}] [%logger] [%thread] [] [%X{requestId}] [%X{serverIp}] %msg%n</property>-->
-		<Property name="splitSize">100 MB</Property>
+		<Property name="splitSize">10 MB</Property>
 		<Property name="PID">????</Property>
 		<Property name="LOG_EXCEPTION_CONVERSION_WORD">%xwEx</Property>
 		<Property name="LOG_LEVEL_PATTERN">%5p</Property>
@@ -37,7 +15,7 @@
 		</Property>
 		<Property name="FILE_LOG_PATTERN">%date{${LOG_DATEFORMAT_PATTERN}}{${LOG_DATE_TIME_ZONE}} ${LOG_LEVEL_PATTERN} [%X{requestId}] [%X{serverIp}] [%t] %-40.40c{1.} : %m%n${LOG_EXCEPTION_CONVERSION_WORD}
 		</Property>
-		<Property name="splitSize">100 MB</Property>
+		<Property name="splitSize">10 MB</Property>
 	</properties>
 	<appenders>
 		<Console name="Console" target="SYSTEM_OUT" follow="true">
@@ -56,7 +34,7 @@
 				<ThresholdFilter level="debug" onMatch="ACCEPT"
 								 onMismatch="DENY" />
 			</Filters>
-			<DefaultRolloverStrategy max="50"/>
+			<DefaultRolloverStrategy max="10"/>
 		</RollingRandomAccessFile>
 
 		<RollingRandomAccessFile name="RollingInfoFile"
@@ -72,7 +50,7 @@
 				<ThresholdFilter level="info" onMatch="ACCEPT"
 								 onMismatch="DENY" />
 			</Filters>
-			<DefaultRolloverStrategy max="50"/>
+			<DefaultRolloverStrategy max="10"/>
 		</RollingRandomAccessFile>
 
 		<RollingRandomAccessFile name="RollingErrorFile"
@@ -86,7 +64,7 @@
 				<ThresholdFilter level="error" onMatch="ACCEPT"
 								 onMismatch="DENY" />
 			</Filters>
-			<DefaultRolloverStrategy max="50"/>
+			<DefaultRolloverStrategy max="10"/>
 		</RollingRandomAccessFile>
 
 		<RollingRandomAccessFile name="RollingDebugFile"
@@ -104,7 +82,7 @@
 				<ThresholdFilter level="debug" onMatch="ACCEPT"
 								 onMismatch="DENY" />
 			</Filters>
-			<DefaultRolloverStrategy max="50"/>
+			<DefaultRolloverStrategy max="10"/>
 		</RollingRandomAccessFile>
 
 	</appenders>

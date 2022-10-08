@@ -1,36 +1,19 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.template;
 
+import com.hummer.common.utils.AppBusinessAssert;
+import com.hummer.common.utils.ObjectCopyUtils;
 import com.panli.pay.dao.PaymentOrderDao;
 import com.panli.pay.service.domain.context.BaseContext;
 import com.panli.pay.service.domain.context.BasePaymentChannelReqBodyContext;
 import com.panli.pay.service.domain.context.PaymentContext;
-import com.panli.pay.service.domain.context.PaymentResultContext;
+import com.panli.pay.service.domain.result.PaymentResultContext;
+import com.panli.pay.service.domain.result.ProfitSharingResultContext;
 import com.panli.pay.service.domain.core.AbstractProfitSharingTemplate;
 import com.panli.pay.service.domain.enums.ChannelActionEnum;
+import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.services.PaymentResultInfoService;
 import com.panli.pay.support.model.po.ChannelConfigPo;
+import com.panli.pay.support.model.po.PaymentOrderPo;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -48,7 +31,7 @@ public class DefaultProfitSharingRequestTemplate extends AbstractProfitSharingTe
     @Autowired
     private PaymentResultInfoService resultInfoService;
     @Autowired
-    private PaymentOrderDao orderDao;
+    private PaymentOrderDao paymentOrderDao;
 
     /**
      * Generally, it does not need to be Override
@@ -58,17 +41,18 @@ public class DefaultProfitSharingRequestTemplate extends AbstractProfitSharingTe
      * @param reqBody       request payment body
      */
     @Override
-    protected void savePaymentResult(PaymentResultContext resultContext
+    protected void savePaymentResult(ProfitSharingResultContext resultContext
             , BaseContext<? extends BaseContext<?>> context, BasePaymentChannelReqBodyContext reqBody) {
+
+        PaymentResultContext result = ObjectCopyUtils.copy(resultContext, PaymentResultContext.class);
         PaymentContext paymentContext = new PaymentContext();
         paymentContext.setTradeId(context.getTradeId());
         paymentContext.setUserId(context.getUserId());
         paymentContext.setPlatformCode(context.getPlatformCode());
         paymentContext.setChannelCode(context.getChannelCode());
 
-        // TODO: 2021/9/18 save Profit-sharing result
-
-        resultInfoService.saveProfitSharingResult(resultContext, paymentContext, reqBody.requestBody());
+        //save Profit-sharing result
+        resultInfoService.saveProfitSharingResult(result, paymentContext, reqBody.requestBody());
     }
 
     /**
@@ -85,6 +69,20 @@ public class DefaultProfitSharingRequestTemplate extends AbstractProfitSharingTe
 
         context.setChannelConfigPo(channelConfigPo);
         context.setRequestId(MDC.get(REQUEST_ID));
+
+        PaymentOrderPo orderPo = paymentOrderDao.queryOneByTradeIdAndCode(context.getPlatformCode(), context.getTradeId());
+        AppBusinessAssert.isTrue(orderPo != null
+                , 40004, String.format("payment order %s not fund", context.getTradeId()));
+        AppBusinessAssert.isTrue(
+                PaymentStatusEnum.getByCode(orderPo.getStatusCode()) == PaymentStatusEnum.PAYMENT_SUCCESS
+                , 40005, "payment status must is success,just can profit sharing");
+        context.setPaymentOrder(orderPo);
+    }
+
+    @Override
+    protected void checkReceiver(BaseContext<? extends BaseContext<?>> context) {
+        ChannelConfigPo config = context.getChannelConfigPo();
+
     }
 
     /**

@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.api.controller;
 
 import com.hummer.rest.model.ResourceResponse;
@@ -27,9 +5,14 @@ import com.hummer.rest.utils.ParameterAssertUtil;
 import com.panli.pay.facade.PaymentFacade;
 import com.panli.pay.facade.dto.request.ProfitSharingOrderCreateRequestDto;
 import com.panli.pay.facade.dto.request.ProfitSharingOrderQueryRequestDto;
-import com.panli.pay.facade.dto.request.ProfitSharingReturnDto;
+import com.panli.pay.facade.dto.request.ProfitSharingRateReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingReturnReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingUnfreezeReqDto;
+import com.panli.pay.facade.dto.request.ServiceMerchantAddReceiverReqDto;
 import com.panli.pay.facade.dto.response.BasePaymentQueryResp;
 import com.panli.pay.facade.dto.response.BasePaymentResp;
+import com.panli.pay.facade.dto.response.ProfitSharingRateQueryRespDto;
+import com.panli.pay.support.model.bo.payment.WxServiceMerchantAddReceiverRespDto;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,15 +30,15 @@ import javax.validation.Valid;
  * @author edz
  */
 @RestController
-@RequestMapping(value = "/v1")
-@Api(value = "this is ProfitSharing controller")
+@RequestMapping("/v1")
+@Api("this is ProfitSharing controller")
 @Validated
 public class ProfitSharingController {
     @Autowired
     private PaymentFacade paymentFacade;
 
     @PostMapping("/profit-sharing/create")
-    @ApiOperation(value = "ali,weixin ProfitSharing")
+    @ApiOperation("ali,weixin ProfitSharing")
     public ResourceResponse<BasePaymentResp<? extends BasePaymentResp<?>>> createProfitSharing(
             @RequestBody @Valid ProfitSharingOrderCreateRequestDto dto, Errors errors) {
         ParameterAssertUtil.assertRequestFirstValidated(errors);
@@ -64,7 +47,7 @@ public class ProfitSharingController {
     }
 
     @GetMapping("/profit-sharing/query")
-    @ApiOperation(value = "ali,weixin ProfitSharing query")
+    @ApiOperation("ali,weixin ProfitSharing query")
     public ResourceResponse<BasePaymentQueryResp<? extends BasePaymentQueryResp<?>>> query(
             @RequestBody @Valid ProfitSharingOrderQueryRequestDto dto, Errors errors) {
         ParameterAssertUtil.assertRequestFirstValidated(errors);
@@ -72,11 +55,34 @@ public class ProfitSharingController {
     }
 
     @PostMapping("/profit-sharing/refund")
-    @ApiOperation(value = "ali,weixin ProfitSharing query")
-    public ResourceResponse $return(
-            @RequestBody @Valid ProfitSharingReturnDto dto, Errors errors) {
+    @ApiOperation("ali,weixin ProfitSharing query")
+    public ResourceResponse<String> refund(
+            @RequestBody @Valid ProfitSharingReturnReqDto dto, Errors errors) {
         ParameterAssertUtil.assertRequestFirstValidated(errors);
-        return ResourceResponse.ok();
+        return ResourceResponse.ok(paymentFacade.returnProfitSharing(dto));
     }
 
+    @PostMapping("/profitsharing/receivers/add")
+    @ApiOperation("ali,weixin service merchant profitsharing receivers add")
+    public ResourceResponse<WxServiceMerchantAddReceiverRespDto> addReceivers(
+            @RequestBody @Valid ServiceMerchantAddReceiverReqDto dto, Errors errors) {
+
+        return ResourceResponse.ok(paymentFacade.addReceivers(dto));
+    }
+
+    @PostMapping("/profitsharing/rate/query")
+    @ApiOperation("ali,weixin service merchant profitsharing rate query")
+    public ResourceResponse<ProfitSharingRateQueryRespDto> queryRate(
+            @RequestBody @Valid ProfitSharingRateReqDto reqDto, Errors errors) {
+
+        return ResourceResponse.ok(paymentFacade.queryProfitSharingRate(reqDto));
+    }
+
+    @PostMapping("/profitsharing/unfreeze")
+    @ApiOperation("ali,weixin service merchant profitsharing unfreeze")
+    public ResourceResponse<Void> queryRate(
+            @RequestBody @Valid ProfitSharingUnfreezeReqDto reqDto, Errors errors) {
+        paymentFacade.unfreezeProfitSharingOrder(reqDto);
+        return ResourceResponse.ok();
+    }
 }

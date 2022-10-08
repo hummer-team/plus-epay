@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.test;
 
 import com.alibaba.fastjson.JSON;
@@ -29,6 +7,12 @@ import com.panli.pay.service.domain.payment.wx.context.req.WxAdvancePaymentReq;
 import org.dom4j.DocumentException;
 import org.junit.Test;
 
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.SortedMap;
@@ -60,7 +44,7 @@ public class WxApiV2SignTest {
         body.setDescription("test");
         body.setOutTradeNo("id000000001");
         body.setNotifyUrl("url000000001");
-        body.setTimeExpire(DateUtil.addHour(DateUtil.now(),1));
+        body.setTimeExpire(DateUtil.addHour(DateUtil.now(), 1));
 
         WxAdvancePaymentReq.Amount amount = new WxAdvancePaymentReq.Amount();
         amount.setTotal(1);
@@ -88,7 +72,31 @@ public class WxApiV2SignTest {
 
 
     @Test
-    public void key(){
+    public void key() {
         System.out.println("0123456789abcdefgopqrstABCDEFGHI".getBytes().length);
+    }
+
+    @Test
+    public void test() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        String privateKey = "-----BEGIN PUBLIC KEY-----\n" +
+                "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyLoc0jR0EIhxEAqDUWg0\n" +
+                "H21hgguAM1LnGWr6BvsKQ9S7muZ8C+8BCqxn+BaMzgOHENO2CSFa4pIglGk3QAJK\n" +
+                "mNlcl7d3KblE4SNpfOKGA3XZWZjVxMlAs8DWrEWE4WJHkwQIAFWw0F14JImUwksa\n" +
+                "/E6TJCR8eB29s1odgcPwKqbp1hMPGG7ySfAo7hEkBtcZuqhbUQRTLavzlKVGM8tR\n" +
+                "8ZT3arJLtEzlvu3aRP3cBQTrNevQeladS6QG59LiiOr9ykRP/BoYaFhD7dAf/aBc\n" +
+                "tCXqnnW8zkc9i1LGZ1VREIczxtTMMcg0zLvORkWzYjNe90ja+TWWFJQHgqEcUnjL\n" +
+                "bQIDAQAB\n" +
+                "-----END PUBLIC KEY-----";
+        privateKey = privateKey
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replace("-----END PRIVATE KEY-----", "")
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replaceAll("\\s+", "");
+//        System.out.println(s);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey));
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        PrivateKey key = kf.generatePrivate(keySpec);
+        System.out.println(key);
     }
 }

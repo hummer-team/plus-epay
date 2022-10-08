@@ -1,38 +1,21 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.services;
 
 import com.alibaba.fastjson.JSON;
+import com.hummer.common.utils.DateUtil;
 import com.hummer.common.utils.ObjectCopyUtils;
 import com.hummer.core.PropertiesContainer;
+import com.hummer.dao.annotation.TargetDataSourceTM;
+import com.panli.pay.dao.AmountFlowDao;
 import com.panli.pay.dao.PayCallRecordDao;
 import com.panli.pay.dao.PaymentOrderDao;
+import com.panli.pay.service.domain.constant.Constants;
 import com.panli.pay.service.domain.context.PaymentContext;
-import com.panli.pay.service.domain.context.PaymentResultContext;
 import com.panli.pay.service.domain.context.RefundContext;
-import com.panli.pay.service.domain.context.RefundResultContext;
 import com.panli.pay.service.domain.enums.OrderTypeEnum;
 import com.panli.pay.service.domain.enums.PaymentStatusEnum;
+import com.panli.pay.service.domain.result.PaymentResultContext;
+import com.panli.pay.service.domain.result.RefundResultContext;
+import com.panli.pay.support.model.po.AmountFlowPo;
 import com.panli.pay.support.model.po.PayCallRecordPo;
 import com.panli.pay.support.model.po.PaymentOrderPo;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +31,8 @@ public class PaymentResultInfoServiceImpl implements PaymentResultInfoService {
     private PaymentOrderDao paymentOrderDao;
     @Autowired
     private PayCallRecordDao recordDao;
+    @Autowired
+    private AmountFlowDao amountFlowDao;
 
     @Override
     public void saveProfitSharingResult(PaymentResultContext resultContext
@@ -74,17 +59,18 @@ public class PaymentResultInfoServiceImpl implements PaymentResultInfoService {
         recordDao.insert(recordPo);
     }
 
-    // TODO: 2021/9/17 use hummer.framework @TargetDataSourceTM
-
     @Override
+    @TargetDataSourceTM(dbName = Constants.DbParams.PURCHASE_DB_NAME
+            , transactionManager = Constants.DbParams.PURCHASE_DB_TM, rollbackFor = Throwable.class)
     public void savePaymentResult(PaymentResultContext resultContext
             , PaymentContext paymentContext
             , String reqBody
-            , boolean isBeanNumberPay, boolean createOrder) {
-        if (!isBeanNumberPay) {
+            , boolean createRecord, boolean createOrder, boolean createPayFlow) {
+        if (createRecord) {
             addPayFlowRecord(resultContext, paymentContext, reqBody);
         }
-
+        String subMchId = (String) paymentContext.getContext().getAffixData().get("subMchId");
+        String merchantId = StringUtils.isNoneEmpty(subMchId) ? subMchId : paymentContext.getChannelConfigPo().getMerchantId();
         if (createOrder) {
             PaymentOrderPo orderPo = new PaymentOrderPo();
             orderPo.setAmount(paymentContext.getAmount());
@@ -103,9 +89,24 @@ public class PaymentResultInfoServiceImpl implements PaymentResultInfoService {
             orderPo.setChannelCode(paymentContext.getChannelCode());
             orderPo.setOrderTag(paymentContext.getOrderTag());
             orderPo.setRefundBatchId(paymentContext.getBatchId());
-            orderPo.setMerchantId(paymentContext.getMerchantId());
+            orderPo.setMerchantId(merchantId);
             orderPo.setOrderType(paymentContext.getOrderType().ordinal());
+            orderPo.setPayType(paymentContext.getPayChannelType().getCode());
             paymentOrderDao.insertPayOrder(orderPo);
+        }
+        if (createPayFlow) {
+            AmountFlowPo po = new AmountFlowPo();
+            po.setAmount(paymentContext.getAmount());
+            po.setMerchantId(merchantId);
+            po.setAmountUnitType(paymentContext.getAmountUnitType());
+            po.setBatchId(null);
+            po.setChannelTradeId(resultContext.getChannelTradeId());
+            po.setCreatedDatetime(DateUtil.now());
+            po.setFlowType(false);
+            po.setRate(1d);
+            po.setRequestId(MDC.get(REQUEST_ID));
+            po.setTradeId(paymentContext.getTradeId());
+            amountFlowDao.insert(po);
         }
     }
 
@@ -123,7 +124,9 @@ public class PaymentResultInfoServiceImpl implements PaymentResultInfoService {
         recordPo.setRequestId(MDC.get(REQUEST_ID));
         recordDao.insert(recordPo);
 
-
+        if (!context.isSuccess()) {
+            return;
+        }
         PaymentOrderPo orderPo = new PaymentOrderPo();
         orderPo.setAmount(refundContext.getAmount());
         //default 0
@@ -137,6 +140,7 @@ public class PaymentResultInfoServiceImpl implements PaymentResultInfoService {
                 ? PaymentStatusEnum.REFUND_SUCCESS.getCode()
                 : PaymentStatusEnum.REFUND_FAILED.getCode());
         orderPo.setChannelCode(refundContext.getChannelCode());
+        orderPo.setOrderType(OrderTypeEnum.REFUND_ORDER.ordinal());
         //flowPo.setOrderTag(refundContext.get);
         paymentOrderDao.insertPayOrder(orderPo);
     }

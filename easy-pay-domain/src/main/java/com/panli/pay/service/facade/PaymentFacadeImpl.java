@@ -1,51 +1,32 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.facade;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import com.hummer.common.exceptions.AppException;
-import com.hummer.common.utils.AppBusinessAssert;
 import com.hummer.common.utils.ObjectCopyUtils;
-import com.panli.pay.dao.ChannelPlatformConfigDao;
 import com.panli.pay.dao.PaymentOrderDao;
 import com.panli.pay.facade.PaymentFacade;
 import com.panli.pay.facade.dto.request.BasePaymentCancelRequestDto;
 import com.panli.pay.facade.dto.request.BasePaymentRequestDto;
 import com.panli.pay.facade.dto.request.BaseProfitSharingOrderRequestDto;
 import com.panli.pay.facade.dto.request.BaseQueryPaymentStatusRequestDto;
+import com.panli.pay.facade.dto.request.ProfitSharingRateReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingReturnReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingUnfreezeReqDto;
 import com.panli.pay.facade.dto.request.RefundRequestDto;
+import com.panli.pay.facade.dto.request.ServiceMerchantAddReceiverReqDto;
 import com.panli.pay.facade.dto.response.BasePaymentQueryResp;
 import com.panli.pay.facade.dto.response.BasePaymentResp;
+import com.panli.pay.facade.dto.response.ProfitSharingRateQueryRespDto;
 import com.panli.pay.facade.dto.response.QueryPaymentStatusCommonRespDto;
-import com.panli.pay.service.domain.context.CancelContext;
+import com.panli.pay.service.domain.context.PaymentCancelContext;
 import com.panli.pay.service.domain.context.PaymentContext;
-import com.panli.pay.service.domain.context.PaymentQueryResultContext;
+import com.panli.pay.service.domain.context.ProfitSharingAddReceiverContext;
 import com.panli.pay.service.domain.context.ProfitSharingContext;
 import com.panli.pay.service.domain.context.RefundContext;
-import com.panli.pay.service.domain.core.AbstractCanelPaymentTemplate;
+import com.panli.pay.service.domain.core.AbstractCancelPaymentTemplate;
+import com.panli.pay.service.domain.core.AbstractChannelTemplate;
 import com.panli.pay.service.domain.core.AbstractPaymentQueryTemplate;
 import com.panli.pay.service.domain.core.AbstractPaymentTemplate;
+import com.panli.pay.service.domain.core.AbstractProfitSharingAddReceiverTemplate;
 import com.panli.pay.service.domain.core.AbstractProfitSharingTemplate;
 import com.panli.pay.service.domain.core.AbstractRefundTemplate;
 import com.panli.pay.service.domain.core.PaymentChannel;
@@ -55,13 +36,20 @@ import com.panli.pay.service.domain.enums.PayChannelTypeEnum;
 import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.enums.TemplateEnum;
 import com.panli.pay.service.domain.lookup.LookupService;
-import com.panli.pay.service.domain.services.NameBuilderService;
-import com.panli.pay.support.model.po.ChannelPlatformConfigPo;
+import com.panli.pay.service.domain.result.BaseResultContext;
+import com.panli.pay.service.domain.result.PaymentCancelResultContext;
+import com.panli.pay.service.domain.result.PaymentQueryResultContext;
+import com.panli.pay.service.domain.result.ProfitSharingAddReceiverResultContext;
+import com.panli.pay.service.domain.result.RefundResultContext;
+import com.panli.pay.support.model.bo.payment.BasePaymentCancelResp;
+import com.panli.pay.support.model.bo.payment.WxServiceMerchantAddReceiverRespDto;
 import com.panli.pay.support.model.po.PaymentOrderPo;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -73,8 +61,6 @@ public class PaymentFacadeImpl implements PaymentFacade {
     private LookupService lookupService;
     @Autowired
     private PaymentOrderDao paymentOrderDao;
-    @Autowired
-    private ChannelPlatformConfigDao platformConfigDao;
 
     @Override
 
@@ -91,8 +77,7 @@ public class PaymentFacadeImpl implements PaymentFacade {
         context.setAmount(dto.getPays().getAmount());
         context.setAffixData(dto.getPays().getParameter());
         context.setPayChannelType(PayChannelTypeEnum.getByChannelCode(dto.getPays().getChannelCode()));
-        context.setMerchantId(dto.getMerchantId());
-        context.setOrderType(getOrderType(dto));
+        context.setOrderType(OrderTypeEnum.PAYMENT_ORDER);
         context.setContext(context);
 
         //do pay
@@ -102,14 +87,6 @@ public class PaymentFacadeImpl implements PaymentFacade {
     @Override
     public BasePaymentResp<? extends BasePaymentResp<?>> createProfitSharing(
             BaseProfitSharingOrderRequestDto<? extends BaseProfitSharingOrderRequestDto<?>> dto) {
-
-        String orderPayChannel = NameBuilderService.getPaymentOrderChannel(dto.getChannelCode(), ChannelActionEnum.PAY);
-        PaymentOrderPo orderPo = paymentOrderDao.queryOneByTradeIdAndCode(dto.getTradeId(), orderPayChannel);
-        AppBusinessAssert.isTrue(orderPo != null
-                , 40004, String.format("payment order %s not fund", dto.getTradeId()));
-        AppBusinessAssert.isTrue(
-                PaymentStatusEnum.getByCode(orderPo.getStatusCode()) == PaymentStatusEnum.PAYMENT_SUCCESS
-                , 40005, "payment status must is success,just can profit sharing");
 
         AbstractProfitSharingTemplate template = lookupService.lookupTemplate(dto.getPlatformCode()
                 , dto.getChannelCode(), TemplateEnum.PROFIT_SHARING_REQUEST);
@@ -123,11 +100,9 @@ public class PaymentFacadeImpl implements PaymentFacade {
         context.setTradeId(dto.getTradeId());
         context.getAffixData().put("dto", dto);
         context.setChannelCode(dto.getChannelCode());
-        context.setPlatformCode(orderPo.getPlatformCode());
+        context.setPlatformCode(dto.getPlatformCode());
         context.setUserId(dto.getUserId());
         context.setContext(context);
-        context.setPaymentOrder(orderPo);
-
         return template.doPayment(context, paymentChannel);
     }
 
@@ -135,7 +110,7 @@ public class PaymentFacadeImpl implements PaymentFacade {
     public List<BasePaymentQueryResp<? extends BasePaymentQueryResp<?>>>
     queryPayment(BaseQueryPaymentStatusRequestDto<? extends BaseQueryPaymentStatusRequestDto<?>> dto) {
 
-        List<PaymentOrderPo> orderPos = Strings.isNullOrEmpty(dto.getPlatformCode())
+        List<PaymentOrderPo> orderPos = StringUtils.isEmpty(dto.getPlatformCode())
                 ? paymentOrderDao.queryByTradeId(dto.getTradeId())
                 : paymentOrderDao.queryByTradeIdAndCode(dto.getTradeId(), dto.getPlatformCode());
         if (CollectionUtils.isEmpty(orderPos)) {
@@ -143,7 +118,7 @@ public class PaymentFacadeImpl implements PaymentFacade {
                     , "trade id invalid: " + dto.getTradeId() + " channelCode: " + dto.getPlatformCode());
         }
 
-        List<BasePaymentQueryResp<? extends BasePaymentQueryResp<?>>> respDtos = Lists.newArrayListWithCapacity(orderPos.size());
+        List<BasePaymentQueryResp<? extends BasePaymentQueryResp<?>>> respDtos = new ArrayList<>(orderPos.size());
         for (PaymentOrderPo order : orderPos) {
             dto.setChannelCode(order.getChannelCode());
             QueryPaymentStatusCommonRespDto respDto = new QueryPaymentStatusCommonRespDto();
@@ -151,8 +126,12 @@ public class PaymentFacadeImpl implements PaymentFacade {
             respDto.setTradeId(order.getTradeId());
             respDto.setStatus(order.getStatusCode());
             respDto.setDescribe(PaymentStatusEnum.getByCode(order.getStatusCode()).getCode2());
+            respDto.setChannelTradeId(order.getChannelTradeId());
+            respDto.setAmount(order.getAmount());
+            respDto.setMerchantId(order.getMerchantId());
+            respDto.setChannelCode(order.getChannelCode());
             //if payment success then return
-            if (PaymentStatusEnum.PAYMENT_SUCCESS == statusEnum) {
+            if (PaymentStatusEnum.WAIT_PAYMENT != statusEnum && PaymentStatusEnum.UNKNOWN != statusEnum) {
                 respDtos.add(respDto);
                 continue;
             }
@@ -170,12 +149,15 @@ public class PaymentFacadeImpl implements PaymentFacade {
 
             respDto.setDescribe(String.format("%s|%s", respDto.getDescribe(), resultContext.getDescribe()));
 
-            respDto.setChannelStatus(resultContext.getStatus());
+            respDto.setChannelStatus(resultContext.getChannelSubCode());
             respDto.setChanneldescribe(String.format("%s|%s|%s", resultContext.getChannelSubMessage()
                     , resultContext.getChannelSubCode(), resultContext.getChannelRespMessage()));
             respDto.setChannelTradeId(resultContext.getChannelTradeId());
             respDto.setChannelCode(order.getChannelCode());
-
+            respDto.setAmount(order.getAmount());
+            respDto.setAmountUnitType(0);
+            respDto.setMerchantId(order.getMerchantId());
+            respDto.setStatus(resultContext.getStatus().getCode());
             respDtos.add(respDto);
         }
         return respDtos;
@@ -192,47 +174,90 @@ public class PaymentFacadeImpl implements PaymentFacade {
     }
 
     @Override
-
-    public void refund(RefundRequestDto dto) {
-        List<PaymentOrderPo> orderPos = paymentOrderDao.queryByTradeId(dto.getTradeId());
-        //todo
+    public String refund(RefundRequestDto dto) {
         RefundContext context = ObjectCopyUtils.copy(dto, RefundContext.class);
         context.setContext(context);
 
         AbstractRefundTemplate template = lookupService.lookupTemplate(dto.getPlatformCode()
-                , dto.getRefundToChannelCode(), TemplateEnum.REFUND);
+                , dto.getChannelCode(), TemplateEnum.REFUND);
         @SuppressWarnings({"rawtypes"})
-        PaymentChannel paymentChannel = lookupService.lookupChannel(dto.getRefundToChannelCode(), ChannelActionEnum.REFUND);
-        template.doRefund(context, paymentChannel);
+        PaymentChannel paymentChannel = lookupService.lookupChannel(dto.getChannelCode(), ChannelActionEnum.REFUND);
+        BaseResultContext<RefundResultContext> resultContext = template.doRefund(context, paymentChannel);
+        return resultContext == null ? null : resultContext.getResult().getChannelRefundId();
     }
 
     @Override
-    public void cancel(BasePaymentCancelRequestDto dto) {
+    public List<BasePaymentCancelResp> cancel(BasePaymentCancelRequestDto dto) {
         List<PaymentOrderPo> orderPos = paymentOrderDao.queryByTradeId(dto.getTradeId());
         if (CollectionUtils.isEmpty(orderPos)) {
             throw new AppException(40004, String.format("trade %s invalid", dto.getTradeId()));
         }
-
-        CancelContext context = ObjectCopyUtils.copy(dto, CancelContext.class);
+        PaymentCancelContext context = ObjectCopyUtils.copy(dto, PaymentCancelContext.class);
         context.setContext(context);
-
-        ChannelPlatformConfigPo configPo = platformConfigDao.queryByCode(dto.getPlatformCode(), dto.getChannelCode());
-
+        List<BasePaymentCancelResp> results = new ArrayList<>();
         for (PaymentOrderPo order : orderPos) {
-            AbstractCanelPaymentTemplate template = lookupService.lookupTemplate(dto.getPlatformCode()
+            AbstractCancelPaymentTemplate template = lookupService.lookupTemplate(dto.getPlatformCode()
                     , order.getChannelCode(), TemplateEnum.CANCEL);
-            // TODO: 2021/7/30 query channel code
 
             @SuppressWarnings({"rawtypes"})
             PaymentChannel paymentChannel = lookupService.lookupChannel(order.getChannelCode(), ChannelActionEnum.CANCEL);
-            template.doCancel(context, paymentChannel);
+            PaymentCancelResultContext resultContext = template.doCancel(context, paymentChannel);
+            BasePaymentCancelResp resp = new BasePaymentCancelResp();
+            resp.setSuccess(resultContext.isSuccess());
+            resp.setRecall(resultContext.isRecall());
+            resp.setChannelRespCode(resultContext.getChannelRespCode());
+            resp.setChannelRespDesc(resultContext.getChannelRespMessage());
+            results.add(resp);
         }
+        return results;
     }
 
-    private OrderTypeEnum getOrderType(BasePaymentRequestDto dto) {
-        return dto.getPays().getParameter() != null
-                && dto.getPays().getParameter().containsKey("subMchId")
-                ? OrderTypeEnum.PROFIT_SHARING_PAYMENT_ORDER
-                : OrderTypeEnum.PAYMENT_ORDER;
+    @Override
+    public WxServiceMerchantAddReceiverRespDto addReceivers(ServiceMerchantAddReceiverReqDto dto) {
+
+        AbstractProfitSharingAddReceiverTemplate template = lookupService.lookupTemplate(dto.getPlatformCode()
+                , dto.getChannelCode(), TemplateEnum.ADD_RECEIVER);
+
+        @SuppressWarnings({"rawtypes"})
+        PaymentChannel paymentChannel = lookupService.lookupChannel(dto.getChannelCode()
+                , ChannelActionEnum.ADD_RECEIVER);
+        ProfitSharingAddReceiverContext context = ObjectCopyUtils.copy(dto, ProfitSharingAddReceiverContext.class);
+        context.setContext(context);
+
+        BaseResultContext<ProfitSharingAddReceiverResultContext> resultContext = template.doAddReceiver(context, paymentChannel);
+        WxServiceMerchantAddReceiverRespDto resp = new WxServiceMerchantAddReceiverRespDto();
+        resp.setSuccess(resultContext.isSuccess());
+        return resp;
+    }
+
+    @Override
+    public ProfitSharingRateQueryRespDto queryProfitSharingRate(ProfitSharingRateReqDto reqDto) {
+        AbstractChannelTemplate template = lookupService.lookupTemplate(reqDto.getPlatformCode()
+                , reqDto.getChannelCode(), TemplateEnum.PROFIT_SHARING_RATE_QUERY);
+        PaymentChannel paymentChannel = lookupService.lookupChannel(reqDto.getChannelCode()
+                , ChannelActionEnum.PROFIT_SHARING_RATE_QUERY);
+        BaseResultContext context = template.doAction(reqDto, paymentChannel);
+        return ObjectCopyUtils.copy(context, ProfitSharingRateQueryRespDto.class);
+    }
+
+    @Override
+    public void unfreezeProfitSharingOrder(ProfitSharingUnfreezeReqDto reqDto) {
+
+        AbstractChannelTemplate template = lookupService.lookupTemplate(reqDto.getPlatformCode()
+                , reqDto.getChannelCode(), TemplateEnum.PROFIT_SHARING_UNFREEZE);
+        PaymentChannel paymentChannel = lookupService.lookupChannel(reqDto.getChannelCode()
+                , ChannelActionEnum.PROFIT_SHARING_UNFREEZE);
+        template.doAction(reqDto, paymentChannel);
+    }
+
+    @Override
+    public String returnProfitSharing(ProfitSharingReturnReqDto reqDto) {
+
+        AbstractChannelTemplate template = lookupService.lookupTemplate(reqDto.getPlatformCode()
+                , reqDto.getChannelCode(), TemplateEnum.PROFIT_SHARING_RETURN);
+        PaymentChannel paymentChannel = lookupService.lookupChannel(reqDto.getChannelCode()
+                , ChannelActionEnum.PROFIT_SHARING_RETURN);
+        RefundResultContext context = (RefundResultContext) template.doAction(reqDto, paymentChannel);
+        return context.getChannelRefundId();
     }
 }

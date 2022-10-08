@@ -1,33 +1,11 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.payment.wx;
 
-import com.panli.pay.facade.dto.response.BasePaymentResp;
 import com.panli.pay.integration.wxpayment.WxApiV2Sign;
 import com.panli.pay.service.domain.context.BaseContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
+import com.panli.pay.service.domain.result.BaseResultContext;
 import com.panli.pay.service.domain.context.PaymentQueryContext;
-import com.panli.pay.service.domain.context.PaymentQueryResultContext;
+import com.panli.pay.service.domain.result.PaymentQueryResultContext;
+import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.payment.wx.context.req.WxBarCodePaymentQueryReq;
 import com.panli.pay.support.model.po.ChannelConfigPo;
 import lombok.extern.slf4j.Slf4j;
@@ -87,26 +65,34 @@ public class WxV2ServiceMerchantPaymentQuery extends WxV2PaymentQuery {
         return super.parseResp(resp);
     }
 
-    /**
-     * builder response message
-     *
-     * @param result      {@link BaseResultContext}
-     * @param channelResp channel response message
-     * @return response body is map
-     */
+
     @Override
-    public BasePaymentResp<? extends BasePaymentResp<?>> builderRespMessage(
-            BaseResultContext<PaymentQueryResultContext> result, String channelResp) {
-        return null;
+    public PaymentStatusEnum parsePaymentStatus(Map<String, Object> resultMap) {
+        if (!successOfOption(resultMap)) {
+            Object errCode = resultMap.get("err_code");
+            if ("ORDERNOTEXIST".equals(errCode)) {
+                return PaymentStatusEnum.ORDER_NOT_EXIST;
+            }
+            return PaymentStatusEnum.UNKNOWN;
+        }
+        String tradeState = (String) resultMap.get("trade_state");
+        switch (tradeState) {
+            case "SUCCESS":
+                return PaymentStatusEnum.PAYMENT_SUCCESS;
+            case "REFUND":
+                return PaymentStatusEnum.REFUND_SUCCESS;
+            case "NOTPAY":
+            case "USERPAYING":
+            case "ACCEPT":
+            case "PAYERROR":
+                return PaymentStatusEnum.WAIT_PAYMENT;
+            case "CLOSED":
+                return PaymentStatusEnum.PAYMENT_CLOSED;
+            case "REVOKED":
+                return PaymentStatusEnum.PAYMENT_CANCELED;
+            default:
+                return PaymentStatusEnum.UNKNOWN;
+        }
     }
 
-    /**
-     * check barcode payment result is success.
-     *
-     * @param resultMap resultMap
-     */
-    @Override
-    public boolean successOfBarCode(Map<String, Object> resultMap) {
-        return super.successOfBarCode(resultMap);
-    }
 }

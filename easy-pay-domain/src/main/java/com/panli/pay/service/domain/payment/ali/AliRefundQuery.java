@@ -1,38 +1,19 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.payment.ali;
 
 import com.alibaba.fastjson.JSON;
 import com.alipay.api.request.AlipayTradeFastpayRefundQueryRequest;
 import com.alipay.api.response.AlipayTradeFastpayRefundQueryResponse;
 import com.panli.pay.service.domain.context.BaseContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
+import com.panli.pay.service.domain.result.BaseResultContext;
 import com.panli.pay.service.domain.context.PaymentContext;
-import com.panli.pay.service.domain.context.PaymentQueryResultContext;
+import com.panli.pay.service.domain.result.PaymentQueryResultContext;
 import com.panli.pay.service.domain.core.PaymentChannel;
+import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.payment.ali.context.AliPaymentChannelReqContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 import static com.panli.pay.service.domain.enums.ConstantDefine.ALI_PAY_REFUND_QUERY_CHANNEL;
 
@@ -95,9 +76,16 @@ public class AliRefundQuery extends BaseAliPayment implements
                 .success(resp.isSuccess())
                 .tradeId(resp.getOutTradeNo())
                 .channelTradeId(resp.getTradeNo())
-                .status(resp.getCode())
+                .status(parsePaymentStatus(null))
                 .describe(resp.getRefundStatus())
                 .channelOriginResponse(JSON.toJSONString(resp))
                 .build();
+    }
+
+    @Override
+    public PaymentStatusEnum parsePaymentStatus(Map<String, Object> resultMap) {
+
+        // TODO status
+        return super.parsePaymentStatus(resultMap);
     }
 }

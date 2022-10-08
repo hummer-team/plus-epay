@@ -1,51 +1,30 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.payment.wx;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.hummer.common.http.HttpResult;
+import com.hummer.common.utils.DateUtil;
 import com.hummer.common.utils.ObjectCopyUtils;
 import com.panli.pay.facade.dto.request.ProfitSharingOrderCreateRequestDto;
 import com.panli.pay.facade.dto.response.BasePaymentResp;
 import com.panli.pay.facade.dto.response.ProfitSharingOrderCreateRespDto;
 import com.panli.pay.integration.wxpayment.WxPayClient;
 import com.panli.pay.service.domain.context.BaseContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
 import com.panli.pay.service.domain.context.ProfitSharingContext;
-import com.panli.pay.service.domain.context.ProfitSharingResultContext;
 import com.panli.pay.service.domain.core.PaymentChannel;
+import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.enums.ProfitSharingStatusEnum;
 import com.panli.pay.service.domain.payment.wx.context.req.WxProfitSharingReqContext;
 import com.panli.pay.service.domain.payment.wx.context.resp.WxProfitSharingOrderCreateRespDto;
-import com.panli.pay.service.domain.payment.wx.context.resp.WxResponse;
+import com.panli.pay.service.domain.result.BaseResultContext;
+import com.panli.pay.service.domain.result.ProfitSharingResultContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.common.utils.CollectionUtils;
-import org.apache.http.entity.ContentType;
-import org.apache.http.message.BasicHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.panli.pay.service.domain.enums.ConstantDefine.WX_FZ_REQUEST;
 
@@ -56,7 +35,7 @@ import static com.panli.pay.service.domain.enums.ConstantDefine.WX_FZ_REQUEST;
 @Service(WX_FZ_REQUEST)
 @Slf4j
 public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChannel<WxProfitSharingReqContext
-        , HttpResult, ProfitSharingContext, ProfitSharingResultContext> {
+        , String, ProfitSharingContext, ProfitSharingResultContext> {
     @Autowired
     private ApiSign apiV3Sign;
 
@@ -74,9 +53,14 @@ public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChan
         WxProfitSharingReqContext req = new WxProfitSharingReqContext();
         req.setAppId(context.getChannelConfigPo().getAppId());
         req.setOutOrderNo(context.getTradeId());
+        req.setMerchantId(context.getChannelConfigPo().getMerchantId());
         req.setSubMchId(dto.getSubMchId());
         req.setUnfreezeUnSplit(dto.getUnfreezeUnSplit());
-        req.setReceivers(ObjectCopyUtils.copyByList(dto.getReceivers(), WxProfitSharingReqContext.Receivers.class));
+        req.setReceivers(dto.getReceivers().stream().map(i -> {
+            WxProfitSharingReqContext.Receivers r = ObjectCopyUtils.copy(i, WxProfitSharingReqContext.Receivers.class);
+            r.setAmount(convertAmount(i.getAmount()));
+            return r;
+        }).collect(Collectors.toList()));
         Assert.isTrue(CollectionUtils.isNotEmpty(req.getReceivers()), "receivers can not null");
 
         req.setTransactionId(context.getPaymentOrder().getChannelTradeId());
@@ -94,16 +78,15 @@ public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChan
      * @throws Throwable
      */
     @Override
-    public HttpResult doCall(BaseContext<ProfitSharingContext> context, WxProfitSharingReqContext reqContext) throws Throwable {
+    public String doCall(BaseContext<ProfitSharingContext> context, WxProfitSharingReqContext reqContext) throws Throwable {
         String body = JSON.toJSONString(reqContext);
-        return WxPayClient.doPostWith(reqContext.getServiceUrl()
+        return WxPayClient.doV3Post(reqContext.getServiceUrl()
                 , body
-                , ContentType.APPLICATION_JSON.withCharset("UTF-8").toString()
                 , reqContext.getTimeoutMillis()
                 , reqContext.getRetry()
-                , apiV3Sign.signOfHeader(reqContext.getSubMchId(), "POST"
-                        , reqContext.getServiceUrl(), body)
-                , new BasicHeader("Accept", "application/json"));
+                , apiV3Sign.signOfHeader(reqContext.getMerchantId(), "POST"
+                        , reqContext.getServiceUrl(), body, context.getChannelConfigPo().getChannelCertPo())
+        );
     }
 
     /**
@@ -113,26 +96,35 @@ public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChan
      * @return {@link BaseResultContext}
      */
     @Override
-    public BaseResultContext<ProfitSharingResultContext> parseResp(HttpResult resp) throws Throwable {
-        WxProfitSharingOrderCreateRespDto respDto = JSON.parseObject(resp.getResult()
+    public BaseResultContext<ProfitSharingResultContext> parseResp(String resp) throws Throwable {
+        WxProfitSharingOrderCreateRespDto respDto = JSON.parseObject(resp
                 , new TypeReference<WxProfitSharingOrderCreateRespDto>() {
-
                 });
-
-        WxResponse response = successOfHttpStatus(resp.getStatus());
 
         ProfitSharingResultContext context = ProfitSharingResultContext.builder()
                 .channelFzOrderId(respDto.getOrderId())
-                .success(response.isSuccess())
+                .success(successOfOption(null))
                 .status(ProfitSharingStatusEnum.getByChannelCode(respDto.getState()))
-                .channelCode(response.getCode())
-                .channelRespMessage(response.getMessage())
-                .channelOriginResponse(resp.getResult())
+                .channelCode("200")
+                .channelRespMessage(null)
+                .channelOriginResponse(resp)
                 .channelOriginRespDto(respDto)
+                .channelOriginResponse(resp)
+                .paymentDateTime(DateUtil.now())
                 .build();
         context.setResult(context);
-
         return context;
+    }
+
+    @Override
+    public PaymentStatusEnum parsePaymentStatus(Map<String, Object> resultMap) {
+
+        return null;
+    }
+
+    @Override
+    public boolean successOfOption(Map<String, Object> resultMap) {
+        return true;
     }
 
     /**
@@ -144,7 +136,7 @@ public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChan
      */
     @Override
     public BasePaymentResp<ProfitSharingOrderCreateRespDto> builderRespMessage(
-            BaseResultContext<ProfitSharingResultContext> result, HttpResult channelResp) {
+            BaseResultContext<ProfitSharingResultContext> result, String channelResp) {
         WxProfitSharingOrderCreateRespDto originDto = result.convertOriginRespDto();
 
         ProfitSharingOrderCreateRespDto respDto = new ProfitSharingOrderCreateRespDto();
@@ -152,7 +144,7 @@ public class WxProfitSharingRequest extends BaseV3Payment implements PaymentChan
         respDto.setStatus(result.getResult().getStatus().ordinal());
         respDto.setStatusDesc(result.getResult().getStatus().getDescribe());
         respDto.setReceivers(ObjectCopyUtils.copyByList(originDto.getReceivers(), ProfitSharingOrderCreateRespDto.Receivers.class));
-
+        respDto.setChannelTradeId(originDto.getOrderId());
         return respDto;
     }
 }

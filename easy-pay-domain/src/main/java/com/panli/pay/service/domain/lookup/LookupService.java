@@ -1,32 +1,13 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.lookup;
 
 import com.hummer.common.exceptions.AppException;
-import com.panli.pay.service.domain.core.AbstractCanelPaymentTemplate;
+import com.hummer.common.utils.AppBusinessAssert;
+import com.panli.pay.service.domain.core.AbstractCancelPaymentTemplate;
+import com.panli.pay.service.domain.core.AbstractChannelTemplate;
 import com.panli.pay.service.domain.core.AbstractNotifyHandlerTemplate;
 import com.panli.pay.service.domain.core.AbstractPaymentQueryTemplate;
 import com.panli.pay.service.domain.core.AbstractPaymentTemplate;
+import com.panli.pay.service.domain.core.AbstractProfitSharingAddReceiverTemplate;
 import com.panli.pay.service.domain.core.AbstractProfitSharingTemplate;
 import com.panli.pay.service.domain.core.AbstractRefundTemplate;
 import com.panli.pay.service.domain.core.PaymentChannel;
@@ -42,6 +23,7 @@ import java.util.Map;
 
 import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_CANCEL_TEMPLATE;
 import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_PAYMENT_TEMPLATE;
+import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_PROFIT_SHARING_ADD_RECEIVER_TEMPLATE;
 import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_PROFIT_SHARING_REQUEST_TEMPLATE;
 import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_QUERY_TEMPLATE;
 import static com.panli.pay.service.domain.enums.ConstantDefine.DEFAULT_REFUND_TEMPLATE;
@@ -61,34 +43,53 @@ public class LookupService {
     @Autowired
     private Map<String, AbstractRefundTemplate> refundTemplateMap;
     @Autowired
-    private Map<String, AbstractCanelPaymentTemplate> cancelPaymentTemplateMap;
+    private Map<String, AbstractCancelPaymentTemplate> cancelPaymentTemplateMap;
     @Autowired
     @SuppressWarnings({"rawtypes"})
     private Map<String, AbstractNotifyHandlerTemplate> notifyHandlerTemplateMap;
+    @Autowired
+    private Map<String, AbstractProfitSharingAddReceiverTemplate> profitSharingAddReceiverTemplateMap;
+    @Autowired
+    private Map<String, AbstractChannelTemplate> channelTemplateMap;
 
     @SuppressWarnings("unchecked")
     public <T> T lookupTemplate(@NotNull String platformCode
             , @NotNull String channelCode
             , @NotNull TemplateEnum templateEnum) {
+        T t = null;
         switch (templateEnum) {
             case PAY:
-                return (T) getOrDefault(paymentTemplateMap, NameBuilderService.paymentTemplateName(platformCode
+                t = (T) getOrDefault(paymentTemplateMap, NameBuilderService.paymentTemplateName(platformCode
                         , channelCode), DEFAULT_PAYMENT_TEMPLATE);
+                break;
             case QUERY:
-                return (T) getOrDefault(queryTemplateMap, NameBuilderService.queryTemplateName(platformCode
+                t = (T) getOrDefault(queryTemplateMap, NameBuilderService.queryTemplateName(platformCode
                         , channelCode), DEFAULT_QUERY_TEMPLATE);
+                break;
             case REFUND:
-                return (T) getOrDefault(refundTemplateMap, NameBuilderService.refundTemplateName(platformCode
+                t = (T) getOrDefault(refundTemplateMap, NameBuilderService.refundTemplateName(platformCode
                         , channelCode), DEFAULT_REFUND_TEMPLATE);
+                break;
             case CANCEL:
-                return (T) getOrDefault(cancelPaymentTemplateMap, NameBuilderService.cancelTemplateName(platformCode
+                t = (T) getOrDefault(cancelPaymentTemplateMap, NameBuilderService.cancelTemplateName(platformCode
                         , channelCode), DEFAULT_CANCEL_TEMPLATE);
+                break;
             case PROFIT_SHARING_REQUEST:
-                return (T) getOrDefault(profitSharingTemplateMap, NameBuilderService.profitSharingTemplateName(platformCode
+                t = (T) getOrDefault(profitSharingTemplateMap, NameBuilderService.profitSharingTemplateName(platformCode
                         , channelCode), DEFAULT_PROFIT_SHARING_REQUEST_TEMPLATE);
+                break;
+            case ADD_RECEIVER:
+                t = (T) getOrDefault(profitSharingAddReceiverTemplateMap
+                        , NameBuilderService.getChannelTemplateName(platformCode, channelCode, templateEnum)
+                        , DEFAULT_PROFIT_SHARING_ADD_RECEIVER_TEMPLATE);
+                break;
             default:
-                throw new AppException(40004, "channel type invalid " + templateEnum);
+                t = (T) getOrDefault(channelTemplateMap
+                        , NameBuilderService.getChannelTemplateName(platformCode, channelCode, templateEnum)
+                        , NameBuilderService.formatTemplateDefaultKey("DEFAULT", templateEnum, "TEMPLATE"));
         }
+        AppBusinessAssert.isTrue(t != null, 40004, "template code invalid " + templateEnum);
+        return t;
     }
 
     /**

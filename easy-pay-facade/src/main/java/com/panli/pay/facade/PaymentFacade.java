@@ -1,34 +1,19 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.facade;
 
 import com.panli.pay.facade.dto.request.BasePaymentCancelRequestDto;
 import com.panli.pay.facade.dto.request.BasePaymentRequestDto;
 import com.panli.pay.facade.dto.request.BaseProfitSharingOrderRequestDto;
 import com.panli.pay.facade.dto.request.BaseQueryPaymentStatusRequestDto;
+import com.panli.pay.facade.dto.request.ProfitSharingRateReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingReturnReqDto;
+import com.panli.pay.facade.dto.request.ProfitSharingUnfreezeReqDto;
 import com.panli.pay.facade.dto.request.RefundRequestDto;
+import com.panli.pay.facade.dto.request.ServiceMerchantAddReceiverReqDto;
 import com.panli.pay.facade.dto.response.BasePaymentQueryResp;
 import com.panli.pay.facade.dto.response.BasePaymentResp;
+import com.panli.pay.facade.dto.response.ProfitSharingRateQueryRespDto;
+import com.panli.pay.support.model.bo.payment.BasePaymentCancelResp;
+import com.panli.pay.support.model.bo.payment.WxServiceMerchantAddReceiverRespDto;
 
 import java.util.List;
 
@@ -43,7 +28,15 @@ public interface PaymentFacade {
     List<BasePaymentQueryResp<? extends BasePaymentQueryResp<?>>>
     queryPayment(BaseQueryPaymentStatusRequestDto<? extends BaseQueryPaymentStatusRequestDto<?>> dto);
 
-    void refund(RefundRequestDto dto);
+    String refund(RefundRequestDto dto);
 
-    void cancel(BasePaymentCancelRequestDto dto);
+    List<BasePaymentCancelResp> cancel(BasePaymentCancelRequestDto dto);
+
+    WxServiceMerchantAddReceiverRespDto addReceivers(ServiceMerchantAddReceiverReqDto dto);
+
+    ProfitSharingRateQueryRespDto queryProfitSharingRate(ProfitSharingRateReqDto reqDto);
+
+    void unfreezeProfitSharingOrder(ProfitSharingUnfreezeReqDto reqDto);
+
+    String returnProfitSharing(ProfitSharingReturnReqDto reqDto);
 }

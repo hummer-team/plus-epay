@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.payment.wx;
 
 import com.google.common.base.Strings;
@@ -30,9 +8,9 @@ import com.panli.pay.facade.dto.response.BasePaymentResp;
 import com.panli.pay.integration.wxpayment.WxApiV2Sign;
 import com.panli.pay.integration.wxpayment.WxPayClient;
 import com.panli.pay.service.domain.context.BaseContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
+import com.panli.pay.service.domain.result.BaseResultContext;
 import com.panli.pay.service.domain.context.PaymentContext;
-import com.panli.pay.service.domain.context.PaymentResultContext;
+import com.panli.pay.service.domain.result.PaymentResultContext;
 import com.panli.pay.service.domain.core.PaymentChannel;
 import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.payment.wx.context.req.WxBarCodePaymentReqContext;
@@ -79,7 +57,6 @@ public class WxV2Payment extends BaseWxV2Payment implements PaymentChannel<WxBar
         reqContext.setTimeoutMillis(configPo.getConnectTimeoutMs());
         //reqContext.setData(reqContext);
         reqContext.setMerchantId(configPo.getMerchantId());
-
         return reqContext;
     }
 
@@ -112,7 +89,7 @@ public class WxV2Payment extends BaseWxV2Payment implements PaymentChannel<WxBar
     public String doCall(BaseContext<PaymentContext> context
             , WxBarCodePaymentReqContext reqContext) throws Throwable {
 
-        return WxPayClient.doPost(reqContext.getServiceUrl()
+        return WxPayClient.doV2Post(reqContext.getServiceUrl()
                 , reqContext.getXmlBody()
                 , reqContext.getMerchantId()
                 , reqContext.getTimeoutMillis()
@@ -128,16 +105,16 @@ public class WxV2Payment extends BaseWxV2Payment implements PaymentChannel<WxBar
     @Override
     public BaseResultContext<PaymentResultContext> parseResp(String resp) throws Throwable {
         Map<String, Object> resultMap = WxApiV2Sign.xmlToMap(resp);
-        boolean success = successOfBarCode(resultMap);
+        boolean success = successOfOption(resultMap);
         PaymentResultContext channelResult = PaymentResultContext.builder()
                 .success(success)
                 .channelRespCode(String.valueOf(resultMap.get("return_code")))
                 .channelRespMessage(String.format("%s|%s", resultMap.get("return_msg")
                         , resultMap.getOrDefault("err_code", String.valueOf(resultMap.get("return_code")))))
                 .channelSubCode(String.valueOf(resultMap.get("result_code")))
-                .channelSubMessage(String.valueOf(resultMap.get("return_code")))
-                .paymentStatus(success ? PaymentStatusEnum.PAYMENT_SUCCESS
-                        : PaymentStatusEnum.PAYMENT_FAILED)
+                .channelSubMessage(String.valueOf(resultMap.get("err_code_des")))
+                .paymentStatus(parsePaymentStatus(resultMap))
+                .channelTradeId((String) resultMap.get("transaction_id"))
                 .channelOriginResponse(resp)
                 .paymentDateTime(DateUtil.now())
                 .build();
@@ -146,14 +123,13 @@ public class WxV2Payment extends BaseWxV2Payment implements PaymentChannel<WxBar
         return channelResult;
     }
 
+
     @Override
-    public boolean successOfBarCode(Map<String, Object> resultMap) {
-        Object returnCode = resultMap.get("return_code");
-        Object resultCode = resultMap.get("result_code");
-        Object tradeType = resultMap.get("trade_type");
-        return "SUCCESS".equals(resultCode)
-                && "SUCCESS".equals(returnCode)
-                && "MICROPAY".equals(tradeType);
+    public PaymentStatusEnum parsePaymentStatus(Map<String, Object> resultMap) {
+        if (successOfOption(resultMap)) {
+            return PaymentStatusEnum.PAYMENT_SUCCESS;
+        }
+        return PaymentStatusEnum.PAYMENT_FAILED;
     }
 
     /**
@@ -173,6 +149,8 @@ public class WxV2Payment extends BaseWxV2Payment implements PaymentChannel<WxBar
             resp.setStatus(r.getPaymentStatus().getCode());
             resp.setStatusDesc(r.getPaymentStatus().getCode2());
             resp.setChannelRespMessage(r.getChannelRespMessage());
+            resp.setMsg(r.getChannelSubMessage());
+            resp.setChannelTradeId(r.getChannelTradeId());
         });
 
         return resp;

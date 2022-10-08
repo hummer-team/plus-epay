@@ -1,38 +1,21 @@
-/*
- * Copyright (c) 2021 LiGuo <bingyang136@163.com>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package com.panli.pay.service.domain.payment.wx;
 
+import com.hummer.common.http.bo.HttpCertBo;
+import com.hummer.common.utils.BigDecimalUtil;
 import com.panli.pay.integration.wxpayment.WxApiV2Sign;
 import com.panli.pay.integration.wxpayment.WxPayClient;
 import com.panli.pay.service.domain.context.BaseContext;
-import com.panli.pay.service.domain.context.BaseResultContext;
 import com.panli.pay.service.domain.context.RefundContext;
-import com.panli.pay.service.domain.context.RefundResultContext;
 import com.panli.pay.service.domain.core.PaymentChannel;
+import com.panli.pay.service.domain.enums.PaymentStatusEnum;
 import com.panli.pay.service.domain.payment.wx.context.req.WxBarCodeRefundReq;
+import com.panli.pay.service.domain.result.BaseResultContext;
+import com.panli.pay.service.domain.result.RefundResultContext;
 import com.panli.pay.support.model.po.ChannelConfigPo;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -53,16 +36,7 @@ public class WxV2Refund extends BaseWxV2Payment implements PaymentChannel<WxBarC
     @Override
     public WxBarCodeRefundReq builder(BaseContext<RefundContext> context) throws Throwable {
         ChannelConfigPo configPo = context.getChannelConfigPo();
-        Map<String, Object> treeMap = new TreeMap<>();
-        treeMap.put("appid", configPo.getAppId());
-        treeMap.put("mch_id", configPo.getMerchantId());
-        treeMap.put("nonce_str", WxApiV2Sign.generateNonceStr());
-        treeMap.put("transaction_id", context.getContext().getChannelTradeId());
-        treeMap.put("out_trade_no", context.getContext().getTradeId());
-        treeMap.put("out_refund_no", context.getContext().getRefundBatchId());
-        treeMap.put("total_fee", context.getContext().getOriginOrderAmount());
-        treeMap.put("refund_fee", context.getContext().getAmount());
-        treeMap.put("notify_url", getNotifyUrl(configPo.getExtendParameter()));
+        Map<String, Object> treeMap = composeParams(context);
         treeMap.put("sign", WxApiV2Sign.generateSignatureByMd5(treeMap, configPo.getPrivateKey()));
 
         WxBarCodeRefundReq reqContext = new WxBarCodeRefundReq();
@@ -70,10 +44,32 @@ public class WxV2Refund extends BaseWxV2Payment implements PaymentChannel<WxBarC
         reqContext.setServiceUrl(configPo.getServiceUrl());
         reqContext.setTimeoutMillis(configPo.getConnectTimeoutMs());
         reqContext.setMerchantId(configPo.getMerchantId());
-
+        reqContext.setCertPath(configPo.getExtParameterValWithAssertNotNull("certPath"));
+        reqContext.setCertName(configPo.getExtParameterValWithAssertNotNull("certName"));
+        reqContext.setCertPassword(configPo.getExtParameterValWithAssertNotNull("certPassword"));
+        reqContext.setCertKsType(configPo.getExtParameterValWithAssertNotNull("certKsType"));
         //reqContext.setData(reqContext);
 
         return reqContext;
+    }
+
+    public Map<String, Object> composeParams(BaseContext<RefundContext> context) {
+        ChannelConfigPo configPo = context.getChannelConfigPo();
+        Map<String, Object> treeMap = new TreeMap<>();
+        treeMap.put("appid", configPo.getAppId());
+        treeMap.put("mch_id", configPo.getMerchantId());
+        treeMap.put("nonce_str", WxApiV2Sign.generateNonceStr());
+        treeMap.put("out_trade_no", context.getContext().getTradeId());
+        treeMap.put("out_refund_no", context.getContext().getRefundBatchId());
+        treeMap.put("total_fee", BigDecimalUtil.mulOf2HalfDown(context.getContext().getOriginOrderAmount(),
+                BigDecimal.valueOf(100)).intValue());
+        treeMap.put("refund_fee", BigDecimalUtil.mulOf2HalfDown(context.getContext().getAmount(),
+                BigDecimal.valueOf(100)).intValue());
+        String notifyUrl = getNotifyUrl(configPo.getExtendParameter());
+        if (StringUtils.isNotEmpty(notifyUrl)) {
+            treeMap.put("notify_url", notifyUrl);
+        }
+        return treeMap;
     }
 
     /**
@@ -87,11 +83,17 @@ public class WxV2Refund extends BaseWxV2Payment implements PaymentChannel<WxBarC
     @Override
     public String doCall(BaseContext<RefundContext> context
             , WxBarCodeRefundReq reqContext) throws Throwable {
-        return WxPayClient.doPost(reqContext.getServiceUrl()
+        HttpCertBo cert = HttpCertBo.builder().password(reqContext.getCertPassword())
+                .ksType(reqContext.getCertKsType())
+                .certName(reqContext.getCertName())
+                .certPath(reqContext.getCertPath())
+                .build();
+        return WxPayClient.doV2Post(reqContext.getServiceUrl()
                 , reqContext.getXmlBody()
                 , reqContext.getMerchantId()
                 , reqContext.getTimeoutMillis()
-                , reqContext.getRetry());
+                , reqContext.getRetry()
+                , cert);
     }
 
     /**
@@ -105,27 +107,22 @@ public class WxV2Refund extends BaseWxV2Payment implements PaymentChannel<WxBarC
         Map<String, Object> resultMap = WxApiV2Sign.xmlToMap(resp);
 
         RefundResultContext channelResult = RefundResultContext.builder()
-                .success(successOfBarCode(resultMap))
+                .success(successOfOption(resultMap))
                 .channelRespCode(String.valueOf(resultMap.get("return_code")))
                 .channelRespMessage(String.valueOf(resultMap.get("return_msg")))
                 .channelSubCode(String.valueOf(resultMap.get("result_code")))
                 .channelSubMessage(String.valueOf(resultMap.get("err_code")))
                 .channelOriginResponse(resp)
+                .channelRefundId(String.valueOf(resultMap.get("refund_id")))
                 .build();
 
         channelResult.setResult(channelResult);
         return channelResult;
     }
 
-    /**
-     * check barcode payment result is success.
-     *
-     * @param resultMap resultMap
-     */
+
     @Override
-    public boolean successOfBarCode(Map<String, Object> resultMap) {
-        Object returnCode = resultMap.get("return_code");
-        Object resultCode = resultMap.get("result_code");
-        return "SUCCESS".equals(resultCode) && "SUCCESS".equals(returnCode);
+    public PaymentStatusEnum parsePaymentStatus(Map<String, Object> resultMap) {
+        return null;
     }
 }

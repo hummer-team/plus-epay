@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.ProfitSharingReceiversMapper">
+    <resultMap id="BaseResultMap" type="com.panli.pay.support.model.po.ProfitSharingReceiversPo">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="channel_platform" jdbcType="VARCHAR" property="channelPlatform"/>
+        <result column="service_mch_id" jdbcType="VARCHAR" property="serviceMchId"/>
+        <result column="sub_mch_id" jdbcType="VARCHAR" property="subMchId"/>
+        <result column="receiver_type" jdbcType="VARCHAR" property="receiverType"/>
+        <result column="receiver_account" jdbcType="VARCHAR" property="receiverAccount"/>
+        <result column="created_user_id" jdbcType="VARCHAR" property="createdUserId"/>
+        <result column="created_date_time" jdbcType="TIMESTAMP" property="createdDateTime"/>
+        <result column="last_modified_user_id" jdbcType="VARCHAR" property="lastModifiedUserId"/>
+        <result column="last_modified_datetime" jdbcType="TIMESTAMP" property="lastModifiedDatetime"/>
+        <result column="is_deleted" jdbcType="BIT" property="isDeleted"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, channel_platform, service_mch_id, sub_mch_id, receiver_type, receiver_account,
+    created_user_id, created_date_time, last_modified_user_id, last_modified_datetime, 
+    is_deleted
+    </sql>
+    <select id="queryByUnique" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from profit_sharing_receivers
+        where channel_platform = #{channelPlatform} and service_mch_id = #{serviceMchId} and sub_mch_id = #{subMchId}
+        and receiver_account = #{receiverAccount} and is_deleted = 0 limit 1
+    </select>
+    <insert id="insert" parameterType="com.panli.pay.support.model.po.ProfitSharingReceiversPo">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into profit_sharing_receivers (channel_platform, service_mch_id, sub_mch_id,
+        receiver_type, receiver_account, created_user_id,
+        created_date_time, last_modified_user_id,
+        last_modified_datetime, is_deleted)
+        values (#{channelPlatform,jdbcType=VARCHAR}, #{serviceMchId,jdbcType=VARCHAR}, #{subMchId,jdbcType=VARCHAR},
+        #{receiverType,jdbcType=VARCHAR}, #{receiverAccount,jdbcType=VARCHAR}, #{createdUserId,jdbcType=VARCHAR},
+        #{createdDateTime,jdbcType=TIMESTAMP}, #{lastModifiedUserId,jdbcType=VARCHAR},
+        #{lastModifiedDatetime,jdbcType=TIMESTAMP}, #{isDeleted,jdbcType=BIT})
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.panli.pay.support.model.po.ProfitSharingReceiversPo">
+        update profit_sharing_receivers
+        <set>
+            <if test="channelPlatform != null">
+                channel_platform = #{channelPlatform,jdbcType=VARCHAR},
+            </if>
+            <if test="serviceMchId != null">
+                service_mch_id = #{serviceMchId,jdbcType=VARCHAR},
+            </if>
+            <if test="subMchId != null">
+                sub_mch_id = #{subMchId,jdbcType=VARCHAR},
+            </if>
+            <if test="receiverType != null">
+                receiver_type = #{receiverType,jdbcType=VARCHAR},
+            </if>
+            <if test="receiverAccount != null">
+                receiver_account = #{receiverAccount,jdbcType=VARCHAR},
+            </if>
+            <if test="createdUserId != null">
+                created_user_id = #{createdUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="createdDateTime != null">
+                created_date_time = #{createdDateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="lastModifiedUserId != null">
+                last_modified_user_id = #{lastModifiedUserId,jdbcType=VARCHAR},
+            </if>
+            <if test="lastModifiedDatetime != null">
+                last_modified_datetime = #{lastModifiedDatetime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isDeleted != null">
+                is_deleted = #{isDeleted,jdbcType=BIT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.panli.pay.dao.ChannelCertDao">
+    <resultMap id="BaseResultMap" type="com.panli.pay.support.model.po.ChannelCertPo">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="merchant_id" jdbcType="VARCHAR" property="merchantId"/>
+        <result column="channel_platform" jdbcType="VARCHAR" property="channelPlatform"/>
+        <result column="application_cert" jdbcType="VARCHAR" property="applicationCert"/>
+        <result column="application_key" jdbcType="VARCHAR" property="applicationKey"/>
+        <result column="serial_no" jdbcType="VARCHAR" property="serialNo"/>
+        <result column="cert_platform_pub" jdbcType="VARCHAR" property="certPlatformPub"/>
+        <result column="token_api_url" jdbcType="VARCHAR" property="tokenApiUrl"/>
+        <result column="token_api_method" jdbcType="VARCHAR" property="tokenApiMethod"/>
+        <result column="cert_platform_pri" jdbcType="VARCHAR" property="certPlatformPri"/>
+        <result column="cert_platform_serial_no" jdbcType="VARCHAR" property="certPlatformSerialNo"/>
+        <result column="cert_expire_time" jdbcType="TIMESTAMP" property="certExpireTime"/>
+        <result column="created_date_time" jdbcType="TIMESTAMP" property="createdDateTime"/>
+        <result column="last_modified_date_time" jdbcType="TIMESTAMP" property="lastModifiedDateTime"/>
+        <result column="is_deleted" jdbcType="BIT" property="isDeleted"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        id, merchant_id, channel_platform, application_cert, application_key, serial_no,
+    cert_platform_pub, token_api_url, token_api_method, cert_platform_pri, cert_platform_serial_no,
+    cert_expire_time, created_date_time, last_modified_date_time, is_deleted
+    </sql>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from channel_cert
+        where channel_platform = #{channelPlatform} AND merchant_id = #{merchantId}
+        AND is_deleted = 0 limit 1
+    </select>
+
+    <update id="updateById" parameterType="com.panli.pay.support.model.po.ChannelCertPo">
+        update channel_cert
+        <set>
+            <if test="merchantId != null">
+                merchant_id = #{merchantId,jdbcType=VARCHAR},
+            </if>
+            <if test="channelPlatform != null">
+                channel_platform = #{channelPlatform,jdbcType=VARCHAR},
+            </if>
+            <if test="applicationCert != null">
+                application_cert = #{applicationCert,jdbcType=VARCHAR},
+            </if>
+            <if test="applicationKey != null">
+                application_key = #{applicationKey,jdbcType=VARCHAR},
+            </if>
+            <if test="serialNo != null">
+                serial_no = #{serialNo,jdbcType=VARCHAR},
+            </if>
+            <if test="certPlatformPub != null">
+                cert_platform_pub = #{certPlatformPub,jdbcType=VARCHAR},
+            </if>
+            <if test="tokenApiUrl != null">
+                token_api_url = #{tokenApiUrl,jdbcType=VARCHAR},
+            </if>
+            <if test="tokenApiMethod != null">
+                token_api_method = #{tokenApiMethod,jdbcType=VARCHAR},
+            </if>
+            <if test="certPlatformPri != null">
+                cert_platform_pri = #{certPlatformPri,jdbcType=VARCHAR},
+            </if>
+            <if test="certPlatformSerialNo != null">
+                cert_platform_serial_no = #{certPlatformSerialNo,jdbcType=VARCHAR},
+            </if>
+            <if test="certExpireTime != null">
+                cert_expire_time = #{certExpireTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="createdDateTime != null">
+                created_date_time = #{createdDateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="lastModifiedDateTime != null">
+                last_modified_date_time = #{lastModifiedDateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="isDeleted != null">
+                is_deleted = #{isDeleted,jdbcType=BIT},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+</mapper>
